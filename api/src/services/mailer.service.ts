@@ -22,10 +22,10 @@ export class MailerService {
         const { name, email, template, token } = data
         const transporter = this.mailerConfig()
         const html = templateMaker({ name, template, token })
-        await transporter.sendMail({ 
-            from: "rafaellsza03@gmail.com",
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
             to: email,
             html
-         })
+        })
     }
 }

@@ -1,4 +1,5 @@
-import jwt, { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken"
+import * as jwt from "jsonwebtoken"
+import { TokenExpiredError, JsonWebTokenError } from "jsonwebtoken"
 import "dotenv/config"
 import { Injectable, UnauthorizedException } from "@nestjs/common"
 import { ITokenData } from "src/utils/interfaces/ItokenData";

@@ -27,8 +27,8 @@ model Login {
   id           Int       @id @unique @default(autoincrement())
   sort         LoginSort @default(SYSTEM)
   lastLogoutAt DateTime? @db.Timestamp()
-  refreshToken String    @unique @db.Text
+  refreshToken String?   @unique @db.Text
   isVerified   Boolean
   userId       String    @unique @db.VarChar(36)
-  User         User      @relation(fields: [userId], references: [id])
+  User         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
