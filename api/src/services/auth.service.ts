@@ -49,4 +49,46 @@ export class AuthService {
             template: "EmailVerification"
         });
     }
+
+    async login(data: IloginUser) {
+        const user = await this.prisma.user.findUnique({
+            where: {
+                email: data.email,
+                Login: { sort: "SYSTEM" }
+            },
+            select: {
+                id: true,
+                firstName: true,
+                password: true,
+                Login: true
+            },
+        })
+
+        if (!user) throw new BadRequestException("User not found.");
+        if (!user.Login?.isVerified) throw new UnauthorizedException("User not verified.");
+
+        const isPassEqual = this.hash.compareData(data.password, user.password!);
+
+        if (!isPassEqual) throw new BadRequestException("Incorrect email or password.");
+
+        const accessToken = this.jwt.create({
+            sub: user.id,
+            exp: 1000 * 60 * 30,
+            iat: Date.now(),
+            intent: "access",
+            isVerified: user.Login.isVerified
+        })
+        const refreshToken = this.jwt.createRefresh({
+            exp: 60000 * 60 * 24 * 7,
+            sub: user.id
+        })
+
+        const hashedRefreshToken = this.hash.hashData(refreshToken);
+        await this.prisma.login.update({
+            where: { userId: user.id },
+            data: { refreshToken: hashedRefreshToken }
+        })
+
+        return { accessToken, name: user.firstName }
+    }
 }
