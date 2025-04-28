@@ -1,8 +1,10 @@
 import { Body, Controller, Post, Res } from "@nestjs/common";
 import { Response } from "express";
+import { User } from "src/decorators/user";
 import { AuthService } from "src/services/auth.service";
 import { CreateUserDto } from "src/utils/dtos/CreateUserDto";
 import { LoginUserDto } from "src/utils/dtos/LoginUserDto";
+import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
 
 @Controller("auth")
 export class AuthController {
@@ -19,12 +21,23 @@ export class AuthController {
     @Post("login")
     async login(@Res({ passthrough: true }) res: Response, @Body() dto: LoginUserDto) {
         const { name, accessToken } = await this.authService.login(dto);
-        res.cookie("acccessToken", accessToken, {
+        res.clearCookie("accessToken")
+        res.cookie("accessToken", accessToken, {
             secure: false,
             sameSite: true,
             httpOnly: true,
-            maxAge: 60000 * 60 * 24 * 7
+            maxAge: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7),
         })
         return `Welcome back, ${name}!`
+    }
+
+    @Post("logout")
+    async logout(@Res({ passthrough: true }) res: Response, @User() user: IreqUserData) {
+        const data = await this.authService.logout(user.id);
+        res.clearCookie("accessToken");
+        return {
+            message: `See you soon, ${data.name}`,
+            logoutAt: data.lastLogoutAt
+        }
     }
 }

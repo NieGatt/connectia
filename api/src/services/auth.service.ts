@@ -4,7 +4,7 @@ import { MailerService } from "./mailer.service";
 import { IcreateUserData } from "src/utils/interfaces/IcreateUserData";
 import { HashService } from "./hash.service";
 import { JwtService } from "./jwt.service";
-import { IloginUser } from "src/utils/interfaces/ILoginUser";
+import { IloginUser } from "src/utils/interfaces/IloginUser";
 
 @Injectable()
 export class AuthService {
@@ -35,11 +35,10 @@ export class AuthService {
         });
 
         const token = this.jwt.create({
-            exp: 60000 * 60 * 24 * 3,
+            exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 3),
             sub: createdUser.id,
             isVerified: false,
-            intent: "verifiation",
-            iat: Date.now()
+            intent: "verifiation"
         });
 
         await this.mailer.send({
@@ -73,15 +72,11 @@ export class AuthService {
 
         const accessToken = this.jwt.create({
             sub: user.id,
-            exp: 1000 * 60 * 30,
-            iat: Date.now(),
+            exp: Math.floor(Date.now() / 1000) + (30 * 60),
             intent: "access",
             isVerified: user.Login.isVerified
         })
-        const refreshToken = this.jwt.createRefresh({
-            exp: 60000 * 60 * 24 * 7,
-            sub: user.id
-        })
+        const refreshToken = this.jwt.createRefresh(user.id);
 
         const hashedRefreshToken = this.hash.hashData(refreshToken);
         await this.prisma.login.update({
@@ -90,5 +85,20 @@ export class AuthService {
         })
 
         return { accessToken, name: user.firstName }
+    }
+
+    async logout(id: string) {
+        const user = await this.prisma.login.update({
+            where: { userId: id },
+            data: {
+                lastLogoutAt: new Date(),
+                refreshToken: null
+            },
+            include: { User: true }
+        })
+        return {
+            name: user.User.firstName,
+            lastLogoutAt: user.lastLogoutAt
+        }
     }
 }

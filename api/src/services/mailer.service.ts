@@ -1,7 +1,7 @@
 import { createTransport } from "nodemailer"
 import "dotenv/config"
 import { Injectable } from "@nestjs/common"
-import { ImailerData } from "src/utils/interfaces/ImailerData"
+import { IsendEmailData } from "src/utils/interfaces/IsendEmailData"
 import { templateMaker } from "src/utils/handlebars/TemplateMaker"
 
 @Injectable()
@@ -18,7 +18,7 @@ export class MailerService {
         })
     }
 
-    async send(data: ImailerData) {
+    async send(data: IsendEmailData) {
         const { name, email, template, token } = data
         const transporter = this.mailerConfig()
         const html = templateMaker({ name, template, token })
