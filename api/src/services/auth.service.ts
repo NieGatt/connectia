@@ -5,6 +5,8 @@ import { IcreateUserData } from "src/utils/interfaces/IcreateUserData";
 import { HashService } from "./hash.service";
 import { JwtService } from "./jwt.service";
 import { IloginUser } from "src/utils/interfaces/IloginUser";
+import { IsendEmailDataService } from "src/utils/interfaces/IsendEmailDataService";
+import { NotFoundError } from "rxjs";
 
 @Injectable()
 export class AuthService {
@@ -38,7 +40,7 @@ export class AuthService {
             exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 3),
             sub: createdUser.id,
             isVerified: false,
-            intent: "verifiation"
+            intent: "verification"
         });
 
         await this.mailer.send({
@@ -100,5 +102,60 @@ export class AuthService {
             name: user.User.firstName,
             lastLogoutAt: user.lastLogoutAt
         }
+    }
+
+    async validate(id: string) {
+        await this.prisma.login.update({
+            where: { userId: id },
+            data: {
+                isVerified: true
+            }
+        })
+    }
+
+    async sendEmail({ email, template }: IsendEmailDataService) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+            include: { Login: true }
+        });
+
+        if (!user?.Login) throw new NotFoundError("User not found.");
+
+        const { id, firstName, lastName, Login: { isVerified } } = user;
+
+        if (isVerified && template === "EmailVerification")
+            throw new BadRequestException("User already verified.");
+
+        if (!isVerified && template === "PasswordReset")
+            throw new BadRequestException("User not verified.");
+
+        const intent = template === "EmailVerification"
+            ? "verification"
+            : template === "PasswordReset"
+                ? "reset"
+                : "access"
+
+        if (intent === "access")
+            throw new UnauthorizedException("Wrong verification token");
+
+        const time = template === "EmailVerification"
+            ? 60 * 60 * 24 * 3
+            : 60 * 60 * 5
+
+        const token = this.jwt.create({
+            exp: Math.floor(Date.now() / 1000) + time,
+            intent,
+            isVerified,
+            sub: id
+        })
+
+        await this.mailer.send({
+            name: `${firstName} ${lastName}`,
+            email,
+            template,
+            token
+        })
+
+        return firstName
     }
 }

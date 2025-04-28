@@ -1,6 +1,6 @@
 export interface ITokenData {
     sub: string;
-    intent: "access" | "verifiation" | "reset";
+    intent: "access" | "verification" | "reset";
     isVerified: boolean;
     iat: number;
     exp: number;

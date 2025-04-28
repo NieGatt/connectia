@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, NestMiddleware, UnauthorizedException } from "@nestjs/common";
 import { NextFunction, Response } from "express";
 import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import { JwtService } from "src/services/jwt.service";
@@ -14,7 +14,7 @@ export class AuthMiddleware implements NestMiddleware {
         const accessToken = <string>req.cookies["accessToken"];
 
         if (!accessToken)
-            return next(new NotFoundException("Access token is missing."));
+            return next(new UnauthorizedException("Access token is missing."));
 
         try {
             const { sub, iat, intent, isVerified } = this.jwt.validate(accessToken);
@@ -29,6 +29,8 @@ export class AuthMiddleware implements NestMiddleware {
                 where: { id: sub },
                 include: { Login: true }
             });
+
+            if (!user) throw new BadRequestException("User not found.");
 
             if (user?.Login?.lastLogoutAt) {
                 const lastLogout = new Date(user.Login.lastLogoutAt).valueOf();

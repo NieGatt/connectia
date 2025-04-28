@@ -1,10 +1,14 @@
-import { Body, Controller, Post, Res } from "@nestjs/common";
+import { Body, Controller, Post, Put, Res, UseGuards } from "@nestjs/common";
 import { Response } from "express";
-import { User } from "src/decorators/user";
+import { TokenType } from "src/utils/decorators/TokenType";
+import { User } from "src/utils/decorators/user";
+import { TokenTypeGuard } from "src/utils/guards/TokenTypeGuard.guard";
 import { AuthService } from "src/services/auth.service";
 import { CreateUserDto } from "src/utils/dtos/CreateUserDto";
 import { LoginUserDto } from "src/utils/dtos/LoginUserDto";
 import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
+import { dot } from "node:test/reporters";
+import { SendEmailDto } from "src/utils/dtos/SendEmailDto";
 
 @Controller("auth")
 export class AuthController {
@@ -39,5 +43,19 @@ export class AuthController {
             message: `See you soon, ${data.name}`,
             logoutAt: data.lastLogoutAt
         }
+    }
+
+    @Put("validate")
+    @UseGuards(TokenTypeGuard)
+    @TokenType("verification")
+    async validate(@User() user: IreqUserData) {
+        await this.authService.validate(user.id);
+        return "User validated successfully."
+    }
+
+    @Post("send-email")
+    async sendEmail(@Body() dto: SendEmailDto) {
+        const name = await this.authService.sendEmail(dto);
+        return `Hello, ${name}! We sent a verification link to ${dto.email}.`
     }
 }
