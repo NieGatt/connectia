@@ -14,7 +14,9 @@ export class JwtService {
     }
 
     create(data: Omit<ITokenData, "iat">): string {
-        return jwt.sign({ ...data }, this.sharedSecret)
+        return jwt.sign({ ...data }, this.sharedSecret, {
+            expiresIn: data.exp
+        })
     }
 
     validate(token: string): ITokenData {

@@ -7,8 +7,7 @@ import { AuthService } from "src/services/auth.service";
 import { CreateUserDto } from "src/utils/dtos/CreateUserDto";
 import { LoginUserDto } from "src/utils/dtos/LoginUserDto";
 import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
-import { dot } from "node:test/reporters";
-import { SendEmailDto } from "src/utils/dtos/SendEmailDto";
+import { EmailDto } from "src/utils/dtos/EmailDto";
 
 @Controller("auth")
 export class AuthController {
@@ -53,9 +52,17 @@ export class AuthController {
         return "User validated successfully."
     }
 
-    @Post("send-email")
-    async sendEmail(@Body() dto: SendEmailDto) {
-        const name = await this.authService.sendEmail(dto);
-        return `Hello, ${name}! We sent a verification link to ${dto.email}.`
+    @Post("verification")
+    async verification(@Body() dto: EmailDto) {
+        const name = await this.authService.verification(dto.email);
+        const [userPart, domain] = dto.email.split("@");
+        const email = `${userPart.slice(0, 3)}***@${domain}`;
+        return `Hello, ${name}! We sent a verification link to ${email}.`
+    }
+
+    @Post("forgot-password")
+    async forgot(@Body() dto: EmailDto) {
+        const name = await this.authService.forgot(dto.email);
+        return `Hello, ${name}! In order to reset your password, click on the verification link sent to ${dto.email}.`
     }
 }

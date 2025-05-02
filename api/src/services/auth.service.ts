@@ -1,12 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from "@nestjs/common"
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/common"
 import { PrismaService } from "./prisma.service";
 import { MailerService } from "./mailer.service";
 import { IcreateUserData } from "src/utils/interfaces/IcreateUserData";
 import { HashService } from "./hash.service";
 import { JwtService } from "./jwt.service";
 import { IloginUser } from "src/utils/interfaces/IloginUser";
-import { IsendEmailDataService } from "src/utils/interfaces/IsendEmailDataService";
-import { NotFoundError } from "rxjs";
 
 @Injectable()
 export class AuthService {
@@ -37,10 +35,10 @@ export class AuthService {
         });
 
         const token = this.jwt.create({
-            exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 3),
             sub: createdUser.id,
             isVerified: false,
-            intent: "verification"
+            intent: "verification",
+            exp: "3d"
         });
 
         await this.mailer.send({
@@ -74,9 +72,9 @@ export class AuthService {
 
         const accessToken = this.jwt.create({
             sub: user.id,
-            exp: Math.floor(Date.now() / 1000) + (30 * 60),
             intent: "access",
-            isVerified: user.Login.isVerified
+            isVerified: user.Login.isVerified,
+            exp: "30m"
         })
         const refreshToken = this.jwt.createRefresh(user.id);
 
@@ -113,48 +111,62 @@ export class AuthService {
         })
     }
 
-    async sendEmail({ email, template }: IsendEmailDataService) {
+    async verification(email: string) {
         const user = await this.prisma.user.findUnique({
             where: { email },
             include: { Login: true }
         });
 
-        if (!user?.Login) throw new NotFoundError("User not found.");
+        if (!user?.Login) throw new BadRequestException("User not found.");
 
-        const { id, firstName, lastName, Login: { isVerified } } = user;
+        const { Login: { isVerified }, id, firstName, lastName } = user
 
-        if (isVerified && template === "EmailVerification")
-            throw new BadRequestException("User already verified.");
-
-        if (!isVerified && template === "PasswordReset")
-            throw new BadRequestException("User not verified.");
-
-        const intent = template === "EmailVerification"
-            ? "verification"
-            : template === "PasswordReset"
-                ? "reset"
-                : "access"
-
-        if (intent === "access")
-            throw new UnauthorizedException("Wrong verification token");
-
-        const time = template === "EmailVerification"
-            ? 60 * 60 * 24 * 3
-            : 60 * 60 * 5
+        if (isVerified) throw new BadRequestException("User already verified.");
 
         const token = this.jwt.create({
-            exp: Math.floor(Date.now() / 1000) + time,
-            intent,
+            intent: "verification",
             isVerified,
-            sub: id
+            sub: id,
+            exp: "3d"
         })
 
         await this.mailer.send({
             name: `${firstName} ${lastName}`,
             email,
-            template,
+            template: "EmailVerification",
             token
         })
+
+        return firstName
+    }
+
+    async forgot(email: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+            include: { Login: true }
+        });
+
+        if (!user?.Login) throw new BadRequestException("User not found.");
+
+        const { Login: { isVerified }, firstName, lastName, id } = user
+
+        if (!isVerified) throw new ForbiddenException("User not verified.");
+
+        if (user.password) {
+            const token = this.jwt.create({
+                intent: "reset",
+                sub: id,
+                isVerified,
+                exp: "1h"
+            })
+
+            await this.mailer.send({
+                email,
+                name: `${firstName} ${lastName}`,
+                template: "PasswordReset",
+                token
+            })
+        }
 
         return firstName
     }

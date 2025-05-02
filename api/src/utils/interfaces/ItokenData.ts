@@ -3,5 +3,5 @@ export interface ITokenData {
     intent: "access" | "verification" | "reset";
     isVerified: boolean;
     iat: number;
-    exp: number;
+    exp: any
 }
