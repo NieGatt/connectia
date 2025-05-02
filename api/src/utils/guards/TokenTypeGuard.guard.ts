@@ -32,7 +32,12 @@ export class TokenTypeGuard implements CanActivate {
             if (isVerified && intent !== "reset")
                 throw new UnauthorizedException("User is already verified.");
 
-            const user = await this.prisma.user.findUnique({ where: { id: sub } });
+            const user = await this.prisma.user.findUnique({
+                where: {
+                    id: sub,
+                    Login: { sort: "SYSTEM" }
+                }
+            });
 
             if (!user)
                 throw new BadRequestException("User not found.");

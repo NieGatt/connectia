@@ -8,6 +8,7 @@ import { CreateUserDto } from "src/utils/dtos/CreateUserDto";
 import { LoginUserDto } from "src/utils/dtos/LoginUserDto";
 import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
 import { EmailDto } from "src/utils/dtos/EmailDto";
+import { PasswordDto } from "src/utils/dtos/PasswordDto";
 
 @Controller("auth")
 export class AuthController {
@@ -64,5 +65,15 @@ export class AuthController {
     async forgot(@Body() dto: EmailDto) {
         const name = await this.authService.forgot(dto.email);
         return `Hello, ${name}! In order to reset your password, click on the verification link sent to ${dto.email}.`
+    }
+
+    @Put("reset-password")
+    @UseGuards(TokenTypeGuard)
+    @TokenType("reset")
+    async reset(
+        @Res() res: Response, @Body() dto: PasswordDto, @User() user: IreqUserData) {
+        await this.authService.reset(user.id, dto.password);
+        res.clearCookie("accessToken");
+        return "Ok"
     }
 }

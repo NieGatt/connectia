@@ -170,4 +170,17 @@ export class AuthService {
 
         return firstName
     }
+
+    async reset(id: string, newPass: string) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        const isEqual = this.hash.compareData(newPass, user!.password!);
+
+        if (isEqual) throw new BadRequestException("New password cannot be the same as the previous one.");
+
+        const hashedPass = this.hash.hashData(newPass);
+        await this.prisma.user.update({
+            where: { id },
+            data: { password: hashedPass }
+        });
+    }
 }
