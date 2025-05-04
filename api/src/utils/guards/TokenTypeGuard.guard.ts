@@ -18,7 +18,8 @@ export class TokenTypeGuard implements CanActivate {
         const request = context.switchToHttp().getRequest();
         const token = request.headers?.authorization?.split(" ")[1];
 
-        if (!token) throw new UnauthorizedException(`"${tokenType}" token is missing.`);
+        if (!token) 
+            throw new UnauthorizedException(`"${tokenType}" token is missing.`);
 
         try {
             const { sub, intent, isVerified } = this.jwt.validate(token);
@@ -52,7 +53,7 @@ export class TokenTypeGuard implements CanActivate {
                 }
                 throw new UnauthorizedException("Invalid access token.");
             }
-            throw new Error("An unexpected error occurred.");
+            throw new Error(error);
         }
     }
 }

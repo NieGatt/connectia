@@ -32,10 +32,8 @@ export class AuthMiddleware implements NestMiddleware {
 
             if (!user) throw new BadRequestException("User not found.");
 
-            if (user?.Login?.lastLogoutAt) {
-                const lastLogout = new Date(user.Login.lastLogoutAt).valueOf();
-
-                if (iat * 1000 < lastLogout) {
+            if (user?.Login?.lastLogout) {
+                if (iat * 1000 < user.Login.lastLogout.valueOf()) {
                     res.clearCookie("accessToken");
                     return next(new UnauthorizedException("Unauthorized access token."));
                 }
@@ -51,7 +49,7 @@ export class AuthMiddleware implements NestMiddleware {
                 }
                 return next(new UnauthorizedException("Invalid access token."));
             }
-            return next(new Error("An unexpected error occurred."));
+            return next(new Error(error));
         }
     }
 }

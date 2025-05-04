@@ -63,17 +63,18 @@ export class AuthService {
             },
         })
 
-        if (!user) throw new BadRequestException("User not found.");
-        if (!user.Login?.isVerified) throw new UnauthorizedException("User not verified.");
+        if (!user?.Login) throw new BadRequestException("User not found.");
+
+        const { Login: { isVerified } } = user
+        if (!isVerified) throw new UnauthorizedException("User not verified.");
 
         const isPassEqual = this.hash.compareData(data.password, user.password!);
-
         if (!isPassEqual) throw new BadRequestException("Incorrect email or password.");
 
         const accessToken = this.jwt.create({
             sub: user.id,
             intent: "access",
-            isVerified: user.Login.isVerified,
+            isVerified,
             exp: "30m"
         })
         const refreshToken = this.jwt.createRefresh(user.id);
@@ -81,24 +82,24 @@ export class AuthService {
         const hashedRefreshToken = this.hash.hashData(refreshToken);
         await this.prisma.login.update({
             where: { userId: user.id },
-            data: { refreshToken: hashedRefreshToken }
+            data: { hashedRt: hashedRefreshToken }
         })
 
-        return { accessToken, name: user.firstName }
+        return { accessToken, name: user.firstName, refreshToken }
     }
 
     async logout(id: string) {
         const user = await this.prisma.login.update({
             where: { userId: id },
             data: {
-                lastLogoutAt: new Date(),
-                refreshToken: null
+                lastLogout: new Date(),
+                hashedRt: null
             },
             include: { User: true }
         })
         return {
             name: user.User.firstName,
-            lastLogoutAt: user.lastLogoutAt
+            lastLogoutAt: user.lastLogout
         }
     }
 
@@ -182,5 +183,16 @@ export class AuthService {
             where: { id },
             data: { password: hashedPass }
         });
+    }
+
+    async refreshToken(id: string) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        const accessToken = this.jwt.create({
+            exp: "30m",
+            intent: "access",
+            isVerified: true,
+            sub: user!.id
+        });
+        return { accessToken, name: user!.firstName }
     }
 }

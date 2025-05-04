@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Put, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Put, Res, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 import { TokenType } from "src/utils/decorators/TokenType";
 import { User } from "src/utils/decorators/user";
@@ -9,6 +9,7 @@ import { LoginUserDto } from "src/utils/dtos/LoginUserDto";
 import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
 import { EmailDto } from "src/utils/dtos/EmailDto";
 import { PasswordDto } from "src/utils/dtos/PasswordDto";
+import { RefreshTokenGuard } from "src/utils/guards/RefreshTokenGuard.guard";
 
 @Controller("auth")
 export class AuthController {
@@ -23,26 +24,34 @@ export class AuthController {
     }
 
     @Post("login")
-    async login(@Res({ passthrough: true }) res: Response, @Body() dto: LoginUserDto) {
-        const { name, accessToken } = await this.authService.login(dto);
+    async login(@Res() res: Response, @Body() dto: LoginUserDto) {
+        const { name, accessToken, refreshToken } = await this.authService.login(dto);
+        res.clearCookie("refreshToken");
         res.clearCookie("accessToken")
         res.cookie("accessToken", accessToken, {
             secure: false,
             sameSite: true,
             httpOnly: true,
+            maxAge: Math.floor(Date.now() / 1000) + (60 * 30),
+        });
+        res.cookie("refreshToken", refreshToken, {
+            secure: false,
+            sameSite: true,
+            httpOnly: true,
             maxAge: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7),
         })
-        return `Welcome back, ${name}!`
+        res.send(`Welcome back, ${name}!`)
     }
 
     @Post("logout")
-    async logout(@Res({ passthrough: true }) res: Response, @User() user: IreqUserData) {
+    async logout(@Res() res: Response, @User() user: IreqUserData) {
         const data = await this.authService.logout(user.id);
         res.clearCookie("accessToken");
-        return {
+        res.clearCookie("refreshToken");
+        res.json({
             message: `See you soon, ${data.name}`,
             logoutAt: data.lastLogoutAt
-        }
+        })
     }
 
     @Put("validate")
@@ -64,7 +73,7 @@ export class AuthController {
     @Post("forgot-password")
     async forgot(@Body() dto: EmailDto) {
         const name = await this.authService.forgot(dto.email);
-        return `Hello, ${name}! In order to reset your password, click on the verification link sent to ${dto.email}.`
+        return `Hello, ${name}! We sent a verification link to ${dto.email}. Click on it to reset your password.`
     }
 
     @Put("reset-password")
@@ -74,6 +83,20 @@ export class AuthController {
         @Res() res: Response, @Body() dto: PasswordDto, @User() user: IreqUserData) {
         await this.authService.reset(user.id, dto.password);
         res.clearCookie("accessToken");
-        return "Ok"
+        res.send("Ok");
+    }
+
+    @Get("refresh-token")
+    @UseGuards(RefreshTokenGuard)
+    async refreshToken(@Res() res: Response, @User() user: IreqUserData) {
+        const { accessToken, name } = await this.authService.refreshToken(user.id);
+        res.clearCookie("accessToken");
+        res.cookie("accessToken", accessToken, {
+            secure: false,
+            sameSite: true,
+            httpOnly: true,
+            maxAge: Math.floor(Date.now() / 1000) + (60 * 30),
+        });
+        res.send(`Welcome back, ${name}!`)
     }
 }
