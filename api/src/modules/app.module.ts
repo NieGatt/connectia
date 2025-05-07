@@ -2,16 +2,19 @@ import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/c
 import { UtilsModule } from './utils.module';
 import { AuthModule } from './auth.module';
 import { AuthMiddleware } from 'src/utils/middlewares/AuthMiddleware';
+import { UserModule } from './user.module';
 
 @Module({
-  imports: [UtilsModule, AuthModule]
+  imports: [UtilsModule, AuthModule, UserModule]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthMiddleware)
       .forRoutes(
-        { path: "auth/logout", method: RequestMethod.POST }
+        { path: "auth/logout", method: RequestMethod.POST },
+        { path: "user", method: RequestMethod.ALL },
+        { path: "user/reset-password", method: RequestMethod.PUT }
       )
   }
 }

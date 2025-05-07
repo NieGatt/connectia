@@ -37,19 +37,17 @@ export class AuthMiddleware implements NestMiddleware {
                     res.clearCookie("accessToken");
                     return next(new UnauthorizedException("Unauthorized access token."));
                 }
-            }
-
+            };
             req.user = { id: sub };
             return next()
-
         } catch (error) {
             if (error instanceof JsonWebTokenError) {
                 if (error instanceof TokenExpiredError) {
                     return next(new UnauthorizedException("This token has expired."));
                 }
                 return next(new UnauthorizedException("Invalid access token."));
-            }
-            return next(new Error(error));
+            };
+            return next(error);
         }
     }
 }

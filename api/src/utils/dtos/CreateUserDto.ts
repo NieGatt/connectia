@@ -1,4 +1,4 @@
-import { IsEmail, IsString, Length, Matches } from "class-validator"
+import { IsEmail, IsString, IsStrongPassword, Length, Matches } from "class-validator"
 
 export class CreateUserDto {
     @IsString()
@@ -14,6 +14,7 @@ export class CreateUserDto {
     email: string;
 
     @IsString()
-    @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9\(\)\?><\=\+&%\$#@\!\:;\{\}]).{8,16}$/)
+    @Length(8, 16)
+    @IsStrongPassword({ minLowercase: 1, minNumbers: 1, minUppercase: 1, minSymbols: 1 })
     password: string;
 }
