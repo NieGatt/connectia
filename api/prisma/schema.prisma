@@ -15,6 +15,7 @@ model User {
   password  String?  @db.VarChar(70)
   createdAt DateTime @default(now()) @db.Timestamp()
   Login     Login?
+  Prifle    Profile?
 }
 
 enum LoginSort {
@@ -31,4 +32,15 @@ model Login {
   isVerified Boolean
   userId     String    @unique @db.VarChar(36)
   User       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id            Int      @id @unique @default(autoincrement())
+  photoUrl      String?  @db.Text
+  backgroundUrl String?  @db.Text
+  bio           String?  @db.VarChar(200)
+  website       String?  @db.Text
+  userId        String   @unique @db.VarChar(36)
+  User          User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt     DateTime @default(now()) @db.Timestamp()
 }
