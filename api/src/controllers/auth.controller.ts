@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Put, Req, Res, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 import { TokenType } from "src/utils/decorators/TokenType";
 import { User } from "src/utils/decorators/user";
@@ -10,6 +10,7 @@ import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
 import { EmailDto } from "src/utils/dtos/EmailDto";
 import { PasswordDto } from "src/utils/dtos/PasswordDto";
 import { RefreshTokenGuard } from "src/utils/guards/RefreshTokenGuard.guard";
+import { GoogleAuthGuard } from "src/utils/guards/GoogleAuthGuard.guard";
 
 @Controller("auth")
 export class AuthController {
@@ -21,6 +22,31 @@ export class AuthController {
         const [userPart, domain] = dto.email.split("@");
         const email = `${userPart.slice(0, 3)}***@${domain}`;
         return `Hello, ${dto.firstName}! We sent a verification link to ${email}.`
+    }
+
+    @Get("google")
+    @UseGuards(GoogleAuthGuard)
+    async google() { }
+
+    @Get("google/redirect")
+    @UseGuards(GoogleAuthGuard)
+    async googleRedirect(@Req() req: any, @Res() res: Response) { 
+        const { refreshToken, accessToken } = await this.authService.google(req.user);
+        res.clearCookie("refreshToken");
+        res.clearCookie("accessToken")
+        res.cookie("accessToken", accessToken, {
+            secure: false,
+            sameSite: true,
+            httpOnly: true,
+            maxAge: Math.floor(Date.now() / 1000) + (60 * 30),
+        });
+        res.cookie("refreshToken", refreshToken, {
+            secure: false,
+            sameSite: true,
+            httpOnly: true,
+            maxAge: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7),
+        });
+        res.redirect("http://localhost:5173");
     }
 
     @Post("login")

@@ -5,6 +5,7 @@ import { IcreateUserData } from "src/utils/interfaces/IcreateUserData";
 import { HashService } from "./hash.service";
 import { JwtService } from "./jwt.service";
 import { IloginUser } from "src/utils/interfaces/IloginUser";
+import { IgoogleUserData } from "src/utils/interfaces/IgoogleUserData";
 
 @Injectable()
 export class AuthService {
@@ -30,7 +31,8 @@ export class AuthService {
                     create: {
                         isVerified: false
                     }
-                }
+                },
+                Prifle: { create: {} }
             }
         });
 
@@ -47,6 +49,73 @@ export class AuthService {
             name: `${createdUser.firstName} ${createdUser.lastName}`,
             template: "EmailVerification"
         });
+    }
+
+    async google(data: IgoogleUserData) {
+        const { isVerified, lastName, firstName, email, sort, photoUrl } = data;
+        const user = await this.prisma.user.findUnique({ where: { email: data.email } });
+        if (!user) {
+            const user = await this.prisma.user.create({
+                data: {
+                    firstName,
+                    lastName,
+                    email,
+                    Login: {
+                        create: {
+                            isVerified,
+                            sort
+                        }
+                    },
+                    Prifle: {
+                        create: {
+                            photoUrl
+                        }
+                    }
+                }
+            });
+
+            const accessToken = this.jwt.create({
+                intent: "access",
+                exp: "30m",
+                isVerified,
+                sub: user.id
+            });
+            const refreshToken = this.jwt.createRefresh(user.id);
+            const hashedRt = this.hash.hashData(refreshToken);
+            await this.prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    Login: {
+                        update: {
+                            hashedRt
+                        }
+                    }
+                }
+            });
+
+            return { refreshToken, accessToken }
+        };
+
+        const accessToken = this.jwt.create({
+            intent: "access",
+            exp: "30m",
+            isVerified,
+            sub: user.id
+        });
+
+        const refreshToken = this.jwt.createRefresh(user.id);
+        const hashedRt = this.hash.hashData(refreshToken);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                Login: {
+                    update: {
+                        hashedRt
+                    }
+                }
+            }
+        });
+        return { refreshToken, accessToken }
     }
 
     async login(data: IloginUser) {
