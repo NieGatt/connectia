@@ -28,13 +28,6 @@ export class UserService {
         await this.prisma.user.delete({ where: { id } })
     }
 
-    async update(data: IupdateUser, id: string) {
-        await this.prisma.user.update({
-            where: { id },
-            data: { ...data }
-        })
-    }
-
     async updatePass(data: UpdateUserPass, id: string) {
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user?.password) throw new BadRequestException("Wrong current password.");

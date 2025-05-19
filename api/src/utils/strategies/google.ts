@@ -27,7 +27,7 @@ export class GoogleOauth20 extends PassportStrategy(Strategy, "google") {
             email: emails?.[0]?.value,
             firstName: given_name,
             lastName: family_name,
-            photoUrl: photos?.[0]?.value,
+            image: photos?.[0]?.value,
             isVerified: verified
         };
         return done(null, user)

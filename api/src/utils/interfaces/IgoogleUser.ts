@@ -1,8 +1,8 @@
-export interface IgoogleUserData {
+export interface IgoogleUser {
     sort: "GOOGLE",
     email: string,
     firstName: string,
     lastName: string,
-    photoUrl?: string,
+    image?: string,
     isVerified: boolean;
 }

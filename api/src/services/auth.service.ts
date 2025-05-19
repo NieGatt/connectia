@@ -5,7 +5,7 @@ import { IcreateUserData } from "src/utils/interfaces/IcreateUserData";
 import { HashService } from "./hash.service";
 import { JwtService } from "./jwt.service";
 import { IloginUser } from "src/utils/interfaces/IloginUser";
-import { IgoogleUserData } from "src/utils/interfaces/IgoogleUserData";
+import { IgoogleUser } from "src/utils/interfaces/IgoogleUser";
 
 @Injectable()
 export class AuthService {
@@ -51,8 +51,8 @@ export class AuthService {
         });
     }
 
-    async google(data: IgoogleUserData) {
-        const { isVerified, lastName, firstName, email, sort, photoUrl } = data;
+    async google(data: IgoogleUser) {
+        const { isVerified, lastName, firstName, email, sort, image } = data;
         const user = await this.prisma.user.findUnique({ where: { email: data.email } });
         if (!user) {
             const user = await this.prisma.user.create({
@@ -68,7 +68,7 @@ export class AuthService {
                     },
                     Prifle: {
                         create: {
-                            photoUrl
+                            image
                         }
                     }
                 }

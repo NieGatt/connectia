@@ -1,10 +1,8 @@
-import { Body, Controller, Delete, Get, Patch, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Put } from "@nestjs/common";
 import { UserService } from "src/services/user.service";
 import { User } from "src/utils/decorators/user";
-import { UpdateUserDto } from "src/utils/dtos/UpdateUserDto";
 import { UpdateUserPassDto } from "src/utils/dtos/UpdateUserPassDto";
 import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
-import { UpdateUserPass } from "src/utils/interfaces/UpdateUserPass";
 
 @Controller("user")
 export class UserController {
@@ -18,11 +16,6 @@ export class UserController {
     @Delete()
     async delete(@User() user: IreqUserData) {
         await this.userservice.delete(user.id)
-    }
-
-    @Patch()
-    async update(@User() user: IreqUserData, @Body() dto: UpdateUserDto) {
-        await this.userservice.update(dto, user.id)
     }
 
     @Put("reset-password")
