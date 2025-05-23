@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Get, Param, Patch, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { User } from "src/utils/decorators/user";
 import { IreqUserData } from "src/utils/interfaces/IreqUserDAta";
 import { FileInterceptor } from "@nestjs/platform-express"
@@ -19,7 +19,7 @@ export class ProfileController {
     }
 
     @Get(":id")
-    async others(@Param() params: Uuiddto) { 
+    async others(@Param() params: Uuiddto) {
         const data = await this.profileService.find(params.uuid);
         return data
     }
@@ -28,8 +28,8 @@ export class ProfileController {
     @UseInterceptors(FileInterceptor('file', profileFileOptions))
     async update(
         @User() user: IreqUserData,
-        @UploadedFile() file: Express.Multer.File,
-        @Body() dto: UpdateUserDto
+        @Body() dto: UpdateUserDto,
+        @UploadedFile() file?: Express.Multer.File
     ) {
         await this.profileService.update(user.id, { ...dto, image: file?.path });
         return "Ok"

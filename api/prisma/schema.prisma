@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id        String   @id @unique @default(uuid())
-  firstName String   @db.VarChar(50)
-  lastName  String   @db.VarChar(50)
-  email     String   @unique @db.VarChar(50)
-  password  String?  @db.VarChar(70)
-  createdAt DateTime @default(now()) @db.Timestamp()
+  id        String    @id @unique @default(uuid())
+  firstName String    @db.VarChar(50)
+  lastName  String    @db.VarChar(50)
+  email     String    @unique @db.VarChar(50)
+  password  String?   @db.VarChar(70)
+  createdAt DateTime  @default(now()) @db.Timestamp()
   Login     Login?
   Prifle    Profile?
+  Comment   Comment[]
 }
 
 enum LoginSort {
@@ -40,7 +41,32 @@ model Profile {
   bio         String?  @db.VarChar(200)
   websiteLink String?  @db.Text
   websiteName String?  @db.VarChar(50)
+  createdAt   DateTime @default(now()) @db.Timestamp()
   userId      String   @unique @db.VarChar(36)
   User        User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  createdAt   DateTime @default(now()) @db.Timestamp()
+  Post        Post[]
+}
+
+model Post {
+  id        Int       @id @unique @default(autoincrement())
+  text      String?   @db.Text
+  media     String?   @db.Text
+  createdAt DateTime  @default(now()) @db.Timestamp()
+  profileId Int
+  Profile   Profile?  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  Comment   Comment[]
+}
+
+model Comment {
+  id        Int       @id @unique @default(autoincrement())
+  text      String?   @db.Text
+  media     String?   @db.Text
+  createdAt DateTime  @default(now()) @db.Timestamp()
+  parentId  Int?
+  postId    Int
+  userId    String
+  Post      Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  User      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent    Comment?  @relation("CommentToReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[] @relation("CommentToReplies")
 }

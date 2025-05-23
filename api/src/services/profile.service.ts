@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { PrismaService } from "./prisma.service";
 import { IupdateUser } from "src/utils/interfaces/IupdateUser";
 
@@ -20,7 +20,8 @@ export class ProfileService {
                         bio: true,
                         websiteLink: true,
                         websiteName: true,
-                        createdAt: true
+                        createdAt: true,
+                        Post: true
                     }
                 }
             }
